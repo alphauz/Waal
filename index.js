@@ -16,6 +16,8 @@ const store = makeInMemoryStore({ logger: pino().child({ level: 'silent', stream
 
 const question = (text) => { const rl = readline.createInterface({ input: process.stdin, output: process.stdout }); return new Promise((resolve) => { rl.question(text, resolve) }) };
 
+const { handleCase } = require('./case');
+
 async function startBotz() {
 const { state, saveCreds } = await useMultiFileAuthState("session")
 const ptz = makeWASocket({
@@ -43,18 +45,18 @@ console.log(`𝙲𝙾𝙳𝙴 𝙿𝙰𝙸𝚁𝙸𝙽𝙶 :`, code);
 store.bind(ptz.ev)
 
 ptz.ev.on('messages.upsert', async chatUpdate => {
-try {
-mek = chatUpdate.messages[0]
-if (!mek.message) return
-mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
-if (mek.key && mek.key.remoteJid === 'status@broadcast') return
-if (!ptz.public && !mek.key.fromMe && chatUpdate.type === 'notify') return
-if (mek.key.id.startsWith('BAE5') && mek.key.id.length === 16) return
-m = smsg(ptz, mek, store)
-require("./case")(ptz, m, chatUpdate, store)
-} catch (err) {
-console.log(err)
-}
+    try {
+        mek = chatUpdate.messages[0];
+        if (!mek.message) return;
+        mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message;
+        if (mek.key && mek.key.remoteJid === 'status@broadcast') return;
+        if (!ptz.public && !mek.key.fromMe && chatUpdate.type === 'notify') return;
+        if (mek.key.id.startsWith('BAE5') && mek.key.id.length === 16) return;
+        m = smsg(ptz, mek, store);
+        await handleCase(ptz, m, chatUpdate, store);
+    } catch (err) {
+        console.log(err);
+    }
 })
 
 // Setting
